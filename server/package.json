@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "worker": "node src/workers/syncWorker.js"
   },
   "keywords": [],
   "author": "",

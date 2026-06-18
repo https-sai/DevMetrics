@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const required = [
-  "DATABASE_URL",
+  "MONGODB_URI",
   "REDIS_URL",
   "GITHUB_CLIENT_ID",
   "GITHUB_CLIENT_SECRET",
@@ -17,7 +17,7 @@ required.forEach((key) => {
 
 module.exports = {
   PORT: process.env.PORT || 3001,
-  DATABASE_URL: process.env.DATABASE_URL,
+  MONGODB_URI: process.env.MONGODB_URI,
   REDIS_URL: process.env.REDIS_URL,
   GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
   GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
