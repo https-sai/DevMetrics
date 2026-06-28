@@ -1,5 +1,5 @@
 const express = require("express");
-const db = require("../db/knex");
+const Repository = require("../models/Repository");
 const authenticate = require("../middleware/authenticate");
 const syncQueue = require("../queues/syncQueue");
 
@@ -9,29 +9,39 @@ router.use(authenticate);
 router.post("/", async (req, res, next) => {
   try {
     const {
-      github_repo_id,
+      githubRepoId = req.body.github_repo_id,
       owner,
       name,
-      full_name,
-      private: isPrivate,
+      fullName = req.body.full_name,
+      private: isPrivate = req.body.private,
     } = req.body;
 
-    const [repo] = await db("repositories")
-      .insert({
-        user_id: req.user.userId,
-        github_repo_id,
+    if (!githubRepoId || !owner || !name) {
+      return res.status(400).json({
+        error: "githubRepoId, owner, and name are required",
+      });
+    }
+
+    const resolvedFullName = fullName || `${owner}/${name}`;
+
+    const repo = await Repository.findOneAndUpdate(
+      { githubRepoId },
+      {
+        userId: req.user.userId,
+        githubRepoId,
         owner,
         name,
-        full_name,
-        private: isPrivate,
-      })
-      .returning("*");
+        fullName: resolvedFullName,
+        private: isPrivate ?? false,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
 
     // Enqueue background sync
     await syncQueue.add(
       "full-sync",
       {
-        repoId: repo.id,
+        repoId: repo._id,
         userId: req.user.userId,
       },
       {

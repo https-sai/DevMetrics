@@ -2,7 +2,7 @@ const express = require("express");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const db = require("../db/knex");
+const User = require("../models/User");
 const authenticate = require("../middleware/authenticate");
 const {
   GITHUB_CLIENT_ID,
@@ -48,29 +48,24 @@ router.get("/github/callback", async (req, res, next) => {
     });
     const ghUser = userRes.data;
 
-    // Upsert user record
-    const [user] = await db("users")
-      .insert({
-        github_id: ghUser.id,
+    // Upsert user record (token embedded as a subdocument)
+    const user = await User.findOneAndUpdate(
+      { githubId: ghUser.id },
+      {
+        githubId: ghUser.id,
         username: ghUser.login,
-        avatar_url: ghUser.avatar_url,
+        avatarUrl: ghUser.avatar_url,
         email: ghUser.email,
-      })
-      .onConflict("github_id")
-      .merge(["username", "avatar_url", "email"])
-      .returning("*");
-
-    // Upsert token record
-    await db("oauth_tokens")
-      .insert({ user_id: user.id, access_token, scope, token_type })
-      .onConflict("user_id")
-      .merge(["access_token", "scope", "updated_at"]);
+        oauthToken: { accessToken: access_token, scope, updatedAt: new Date() },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
 
     // Issue JWTs
-    const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, {
+    const accessToken = jwt.sign({ userId: user._id }, JWT_SECRET, {
       expiresIn: "15m",
     });
-    const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
+    const refreshToken = jwt.sign({ userId: user._id }, JWT_REFRESH_SECRET, {
       expiresIn: "7d",
     });
 

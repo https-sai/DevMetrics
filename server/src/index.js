@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const { CLIENT_URL, PORT } = require("./config");
+const { connectDB } = require("./db/mongoose");
 const errorHandler = require("./middleware/errorHandler");
 
 const authRoutes = require("./routes/auth");
@@ -34,4 +35,12 @@ app.use("/api/metrics", metricsRoutes);
 // Error handler must be the last middleware registered
 app.use(errorHandler);
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+async function start() {
+  await connectDB();
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+start().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});
