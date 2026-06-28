@@ -1,4 +1,5 @@
 const axios = require("axios");
+const User = require("../models/User");
 const Repository = require("../models/Repository");
 const Commit = require("../models/Commit");
 const PullRequest = require("../models/PullRequest");
@@ -32,7 +33,7 @@ async function ghGet(path, token, params = {}) {
 async function syncCommits(repo, token) {
   let page = 1;
   while (true) {
-    const res = await ghGet(`/repos/${repo.full_name}/commits`, token, {
+    const res = await ghGet(`/repos/${repo.fullName}/commits`, token, {
       per_page: 100,
       page,
     });
@@ -81,7 +82,7 @@ async function syncCommits(repo, token) {
 async function syncPullRequests(repo, token) {
   let page = 1;
   while (true) {
-    const res = await ghGet(`/repos/${repo.full_name}/pulls`, token, {
+    const res = await ghGet(`/repos/${repo.fullName}/pulls`, token, {
       state: "all",
       per_page: 100,
       page,
@@ -131,6 +132,13 @@ async function processFullSync({ repoId, userId }) {
   const token = await getToken(userId);
   const repo = await Repository.findById(repoId);
 
+  if (!repo?.fullName) {
+    throw new Error(
+      `Repository ${repoId} is missing fullName — re-add it from Settings`,
+    );
+  }
+
+  console.log(`Syncing ${repo.fullName} (${repoId})`);
   await syncCommits(repo, token);
   await syncPullRequests(repo, token);
 

@@ -1,26 +1,36 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { setAccessToken } from "../api/client";
+import { getAccessToken, setAccessToken } from "../api/client";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const handled = useRef(false);
 
   useEffect(() => {
+    if (handled.current) return;
+
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     const refresh = params.get("refresh");
 
     if (token) {
+      handled.current = true;
       setAccessToken(token);
-      // Store refresh token in sessionStorage (cleared when tab closes)
       if (refresh) sessionStorage.setItem("refreshToken", refresh);
-      // Remove tokens from URL immediately so they are not in browser history
       window.history.replaceState({}, "", "/");
       navigate("/", { replace: true });
-    } else {
-      navigate("/login");
+      return;
     }
-  }, []);
+
+    // StrictMode re-runs effects after replaceState clears the query string.
+    if (getAccessToken()) {
+      handled.current = true;
+      navigate("/", { replace: true });
+      return;
+    }
+
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   return <div>Authenticating...</div>;
 }

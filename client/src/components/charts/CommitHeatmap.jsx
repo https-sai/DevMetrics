@@ -6,8 +6,6 @@ export default function CommitHeatmap({ data }) {
   const svgRef = useRef();
 
   useEffect(() => {
-    if (!data?.length) return;
-
     const cellSize = 14;
     const weeksToShow = 52;
     const margin = { top: 20, left: 40, bottom: 10 };
@@ -22,15 +20,17 @@ export default function CommitHeatmap({ data }) {
     // Clear previous render
     svg.selectAll("*").remove();
 
+    const rows = data ?? [];
+
     // Map commit count to a 5-level color scale (GitHub-style greens)
-    const maxCount = d3.max(data, (d) => d.count) || 1;
+    const maxCount = d3.max(rows, (d) => d.count) || 1;
     const color = d3
       .scaleQuantize()
       .domain([0, maxCount])
       .range(["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]);
 
     // Build a lookup from date string to count
-    const byDate = Object.fromEntries(data.map((d) => [d.date, d.count]));
+    const byDate = Object.fromEntries(rows.map((d) => [d.date, d.count]));
 
     // Generate all days in the last 52 weeks
     const end = new Date();
